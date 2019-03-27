@@ -1,0 +1,63 @@
+Patch 28980115 - Combo of OJVM Component 12.1.0.2.190115 DB PSU + DB PSU 12.1.0.2.190115
+Check df -h and make sure /u01 has enough space.	Need 2Gg
+
+For each server - 
+mkdir /u02/orabackup/patch/Jan2019
+upload from Y:\RSAT\databases\Oracle\Ora12c\Ora12cPatch\Jan2019
+p28980115_121020_Linux-x86-64.zip
+ 
+cd /u02/orabackup/patch/Jan2019 
+unzip p28980115_121020_Linux-x86-64.zip
+mv PatchSearch.xml 28980115/
+cd /u02/orabackup/patch/Jan2019/28980115
+Should see 2 directories	28729169 and 28790654
+
+cd /u02/orabackup/patch/Jan2019/28980115/28729169
+$ORACLE_HOME/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -ph ./
+
+cd /u02/orabackup/patch/Jan2019/28980115/28790654
+$ORACLE_HOME/OPatch/opatch prereq CheckConflictAgainstOHWithDetail -ph ./
+
+sqlplus / as sysdba
+shutdown immediate;
+exit; 
+lsnrctl stop
+
+cd /u02/orabackup/patch/Jan2019/28980115/28729169
+/u01/app/oracle/OracleHomes/db12c/OPatch/opatch apply
+cd /u02/orabackup/patch/Jan2019/28980115/28790654
+/u01/app/oracle/OracleHomes/db12c/OPatch/opatch apply
+
+*clean up log files in:
+cd /u01/app/oracle/diag/tnslsnr/sjm5vlpdmdb01/listener/
+cd /u01/app/oracle/diag/rdbms/ctrep1/ctrep1/
+cd /u01/app/oracle/admin/ctrep1/adump/
+
+sqlplus / as sysdba
+startup upgrade;
+exit;
+
+cd $ORACLE_HOME/OPatch
+./datapatch -verbose
+
+/u01/app/oracle/OracleHomes/db12c/OPatch/opatch lsinventory
+Patch  28790654
+Patch  28729169
+
+sqlplus / as sysdba
+shutdown immediate;
+startup;
+
+set hea off;
+select * from dba_objects 
+ 	where status != 'VALID';
+	select * from dba_registry
+	where status != 'VALID';
+
+@$ORACLE_HOME/rdbms/admin/utlrp.sql
+exit;
+
+lsnrctl start
+
+
+ 
